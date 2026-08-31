@@ -1,0 +1,5 @@
+{
+  "image_detail": "auto",
+  "max_output_tokens": 1600,
+  "reasoning_effort": "low"
+}

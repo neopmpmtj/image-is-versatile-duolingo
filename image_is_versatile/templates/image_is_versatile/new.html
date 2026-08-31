@@ -1,0 +1,97 @@
+{% extends "image_is_versatile/base.html" %}
+
+{% block title %}New analysis · Image Analysis{% endblock %}
+
+{% block content %}
+<div class="layout narrow">
+  <section class="panel">
+    <h2>New analysis</h2>
+
+    <div id="model-status-panel" class="alert {% if model_ok %}ok{% else %}error{% endif %}" role="status">
+      {% if model_status %}{{ model_status.message }}{% else %}Select a model to check availability.{% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" data-wait="Analyzing image…">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+
+      <label for="{{ form.vision_model.id_for_label }}">{{ form.vision_model.label }}</label>
+      {{ form.vision_model }}
+      <p class="help">{{ form.vision_model.help_text }}</p>
+      {{ form.vision_model.errors }}
+
+      <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+      {{ form.image }}
+      {{ form.image.errors }}
+
+      <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+      {{ form.description }}
+      <p class="help">{{ form.description.help_text }}</p>
+      {{ form.description.errors }}
+
+      <label for="{{ form.omit_instructions.id_for_label }}">
+        {{ form.omit_instructions }} {{ form.omit_instructions.label }}
+      </label>
+      <p class="help">{{ form.omit_instructions.help_text }}</p>
+      {{ form.omit_instructions.errors }}
+
+      <label for="{{ form.prompt_preset.id_for_label }}">{{ form.prompt_preset.label }}</label>
+      {{ form.prompt_preset }}
+      <p class="help">{{ form.prompt_preset.help_text }}</p>
+      {{ form.prompt_preset.errors }}
+
+      <label for="{{ form.additional.id_for_label }}">{{ form.additional.label }}</label>
+      {{ form.additional }}
+      <p class="help">{{ form.additional.help_text }}</p>
+      {{ form.additional.errors }}
+
+      <div class="actions">
+        <button class="btn" type="submit" id="analyze-btn"{% if not model_ok %} disabled{% endif %}>Analyze</button>
+        <a class="btn secondary" href="{% url 'image_is_versatile:history' %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const select = document.getElementById("{{ form.vision_model.id_for_label }}");
+  const panel = document.getElementById("model-status-panel");
+  const analyzeBtn = document.getElementById("analyze-btn");
+  if (!select || !panel || !analyzeBtn) return;
+
+  function setStatus(ok, message) {
+    panel.textContent = message;
+    panel.classList.remove("ok", "error");
+    panel.classList.add(ok ? "ok" : "error");
+    analyzeBtn.disabled = !ok;
+  }
+
+  async function checkModel(modelId) {
+    if (!modelId) {
+      setStatus(false, "Select a model to check availability.");
+      return;
+    }
+    panel.textContent = "Checking model availability…";
+    panel.classList.remove("ok", "error");
+    try {
+      const response = await fetch(
+        "{% url 'image_is_versatile:model_status' model_id='__id__' %}".replace("__id__", encodeURIComponent(modelId))
+      );
+      const data = await response.json();
+      setStatus(data.ok, data.message);
+    } catch (err) {
+      setStatus(false, "Could not check model availability.");
+    }
+  }
+
+  select.addEventListener("change", function () {
+    checkModel(select.value);
+  });
+})();
+</script>
+{% endblock %}

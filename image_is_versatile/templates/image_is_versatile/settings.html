@@ -1,0 +1,63 @@
+{% extends "image_is_versatile/base.html" %}
+
+{% block title %}Settings · Image Analysis{% endblock %}
+
+{% block content %}
+<div class="layout narrow">
+  <section class="panel">
+    <h2>Vision API parameters</h2>
+    <p class="help">
+      These values apply to every analysis (all models). Saved to
+      <code>config/vision_runtime.json</code>.
+      {% if using_runtime_file %}
+      Active overrides are in use.
+      {% else %}
+      Using factory defaults from <code>config/vision_defaults.py</code>.
+      {% endif %}
+    </p>
+
+    <dl class="meta-grid" style="margin-bottom:1rem;">
+      <div>
+        <dt>Factory default reasoning</dt>
+        <dd>{{ factory_defaults.reasoning_effort }}</dd>
+      </div>
+      <div>
+        <dt>Factory default max tokens</dt>
+        <dd>{{ factory_defaults.max_output_tokens }}</dd>
+      </div>
+      <div>
+        <dt>Factory default image detail</dt>
+        <dd>{{ factory_defaults.image_detail }}</dd>
+      </div>
+    </dl>
+
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+
+      <label for="{{ form.reasoning_effort.id_for_label }}">{{ form.reasoning_effort.label }}</label>
+      {{ form.reasoning_effort }}
+      <p class="help">{{ form.reasoning_effort.help_text }}</p>
+      {{ form.reasoning_effort.errors }}
+
+      <label for="{{ form.max_output_tokens.id_for_label }}">{{ form.max_output_tokens.label }}</label>
+      {{ form.max_output_tokens }}
+      <p class="help">{{ form.max_output_tokens.help_text }}</p>
+      {{ form.max_output_tokens.errors }}
+
+      <label for="{{ form.image_detail.id_for_label }}">{{ form.image_detail.label }}</label>
+      {{ form.image_detail }}
+      <p class="help">{{ form.image_detail.help_text }}</p>
+      {{ form.image_detail.errors }}
+
+      <div class="actions">
+        <button class="btn" type="submit">Save settings</button>
+        <button class="btn secondary" type="submit" name="action" value="reset">Reset to defaults</button>
+        <a class="btn secondary" href="{% url 'image_is_versatile:new' %}">Back to new analysis</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
