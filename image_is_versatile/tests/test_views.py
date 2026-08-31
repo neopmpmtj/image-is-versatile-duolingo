@@ -251,7 +251,7 @@ class ViewTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "image_required")
+        self.assertContains(response, "image_required", status_code=400)
         self.assertEqual(ImageAnalysis.objects.count(), 0)
 
     @patch("image_is_versatile.views.check_model_availability")
