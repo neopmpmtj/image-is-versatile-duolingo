@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import time
 from typing import Any
 
@@ -21,6 +22,11 @@ def _session_cache_key(provider_id: str) -> str:
     return f"vision_provider_{provider_id}"
 
 
+def _key_fingerprint(api_key: str) -> str:
+    digest = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
+
+
 def _cache_age_seconds(cached: dict[str, Any]) -> float:
     cached_at = cached.get("cached_at")
     if not isinstance(cached_at, (int, float)):
@@ -32,7 +38,7 @@ def _get_cached_listing(
     session: dict[str, Any], provider_id: str, api_key: str
 ) -> dict[str, Any] | None:
     cached = session.get(_session_cache_key(provider_id))
-    if not cached or cached.get("key") != api_key:
+    if not cached or cached.get("key") != _key_fingerprint(api_key):
         return None
     ttl = CACHE_OK_TTL_SECONDS if cached.get("ok") else CACHE_FAIL_TTL_SECONDS
     if _cache_age_seconds(cached) > ttl:
@@ -52,7 +58,7 @@ def _set_cached_listing(
     message: str = "",
 ) -> None:
     session[_session_cache_key(provider_id)] = {
-        "key": api_key,
+        "key": _key_fingerprint(api_key),
         "ok": ok,
         "model_ids": model_ids,
         "code": code,

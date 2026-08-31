@@ -35,12 +35,22 @@ class VisionSettingsForm(forms.Form):
             self.fields["image_detail"].initial = active["image_detail"]
 
 
+MAX_IMAGE_BYTES = 20 * 1024 * 1024
+
+
 class NewAnalysisForm(forms.Form):
     vision_model = forms.ChoiceField(choices=[])
     image = forms.ImageField(
         widget=forms.ClearableFileInput(
             attrs={"accept": "image/png,image/jpeg,image/webp,image/gif"}
         ),
+        error_messages={
+            "required": "image_required",
+            "missing": "image_required",
+            "empty": "image_required",
+            "invalid": "image_invalid",
+            "invalid_image": "image_invalid",
+        },
     )
     description = forms.CharField(
         required=False,
@@ -74,6 +84,13 @@ class NewAnalysisForm(forms.Form):
         except KeyError as exc:
             raise forms.ValidationError("unknown_vision_model") from exc
         return vision_model_id
+
+    def clean_image(self):
+        uploaded = self.cleaned_data["image"]
+        size = getattr(uploaded, "size", None)
+        if size is not None and size > MAX_IMAGE_BYTES:
+            raise forms.ValidationError("image_too_large")
+        return uploaded
 
     def clean(self):
         cleaned = super().clean()

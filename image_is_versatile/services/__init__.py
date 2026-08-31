@@ -7,7 +7,11 @@ from image_is_versatile.services.model_registry import (
     get_model,
     model_choices,
 )
-from image_is_versatile.services.persistence import save_error_analysis, save_success_analysis
+from image_is_versatile.services.persistence import (
+    save_error_analysis,
+    save_success_analysis,
+    save_success_analysis_fallback,
+)
 from image_is_versatile.services.providers.base import ModelAvailabilityStatus
 from image_is_versatile.services.vision_config import (
     VisionApiRequestConfig,
@@ -27,4 +31,5 @@ __all__ = [
     "model_choices",
     "save_error_analysis",
     "save_success_analysis",
+    "save_success_analysis_fallback",
 ]

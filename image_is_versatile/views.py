@@ -18,6 +18,7 @@ from image_is_versatile.services import (
     get_model,
     save_error_analysis,
     save_success_analysis,
+    save_success_analysis_fallback,
 )
 from image_is_versatile.services.vision_config import VisionApiRequestConfig
 from image_is_versatile.services.vision_runtime import (
@@ -205,8 +206,6 @@ class NewAnalysisView(View):
                 image_content_type=analysis.image_content_type,
                 api_config=api_config,
             )
-            save_success_analysis(analysis=analysis, result=result)
-            messages.success(request, flash_payload("analysis_completed"))
         except Exception as exc:
             finished_perf = time.perf_counter()
             try:
@@ -224,6 +223,20 @@ class NewAnalysisView(View):
                 analysis.error_message = str(exc)
                 analysis.save(update_fields=["status", "error_type", "error_message", "updated_at"])
             messages.error(request, flash_payload("analysis_failed", detail=str(exc)))
+            return redirect(reverse("image_is_versatile:detail", kwargs={"analysis_id": analysis.id}))
+
+        try:
+            save_success_analysis(analysis=analysis, result=result)
+            messages.success(request, flash_payload("analysis_completed"))
+        except Exception:
+            try:
+                save_success_analysis_fallback(analysis=analysis, result=result)
+                messages.success(request, flash_payload("analysis_completed"))
+            except Exception as persist_exc:
+                messages.error(
+                    request,
+                    flash_payload("analysis_save_failed", detail=str(persist_exc)),
+                )
 
         return redirect(reverse("image_is_versatile:detail", kwargs={"analysis_id": analysis.id}))
 

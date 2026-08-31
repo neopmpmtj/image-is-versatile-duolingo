@@ -9,6 +9,7 @@ from typing import Any
 MESSAGES_EN: dict[str, str] = {
     "analysis_completed": "Analysis completed.",
     "analysis_failed": "Analysis failed: {detail}",
+    "analysis_save_failed": "The model responded, but saving the result failed: {detail}",
     "settings_saved": "Settings saved.",
     "settings_reset": "Vision parameters reset to factory defaults.",
     "unknown_vision_model": "Unknown vision model selected.",
@@ -16,6 +17,9 @@ MESSAGES_EN: dict[str, str] = {
         "Enter additional instructions when system instructions are omitted."
     ),
     "invalid_preset": "Select a valid system-instruction preset.",
+    "image_required": "Upload an image to analyze.",
+    "image_invalid": "Upload a valid PNG, JPEG, WebP, or GIF image.",
+    "image_too_large": "Image is too large. Maximum size is 20 MB.",
     "api_key_missing": "{env_key} is not set.",
     "model_available": "{model} is available on {provider}.",
     "model_not_on_account": (
