@@ -1,55 +1,62 @@
 {% extends "image_is_versatile/base.html" %}
+{% load i18n_flash %}
 
 {% block title %}New analysis · Image Analysis{% endblock %}
+{% block body_attrs %} data-i18n-title="titleNew" data-model-status-url="{% url 'image_is_versatile:model_status' model_id='__id__' %}"{% endblock %}
 
 {% block content %}
 <div class="layout narrow">
   <section class="panel">
-    <h2>New analysis</h2>
+    <h2 data-i18n="pageNewAnalysis">New analysis</h2>
 
-    <div id="model-status-panel" class="alert {% if model_ok %}ok{% else %}error{% endif %}" role="status">
-      {% if model_status %}{{ model_status.message }}{% else %}Select a model to check availability.{% endif %}
+    <div id="model-status-panel" class="alert {% if model_status and model_status.code == 'checking_model_availability' %}{% elif model_ok %}ok{% else %}error{% endif %}" role="status"{% if model_status and model_status.code %} data-status-code="{{ model_status.code }}" data-status-message="{{ model_status.message }}"{% for key, value in model_status.vars.items %} data-status-{{ key }}="{{ value }}"{% endfor %}{% endif %}>
+      {% if model_status %}{{ model_status.message }}{% else %}<span data-i18n="select_model_to_check">Select a model to check availability.</span>{% endif %}
     </div>
 
-    <form method="post" enctype="multipart/form-data" data-wait="Analyzing image…">
+    <form method="post" enctype="multipart/form-data" data-wait-i18n="analyzingImage" id="new-analysis-form">
       {% csrf_token %}
+      {{ form.ui_lang }}
       {% if form.non_field_errors %}
-      <ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      <ul class="errorlist">{% for error in form.non_field_errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>
       {% endif %}
 
-      <label for="{{ form.vision_model.id_for_label }}">{{ form.vision_model.label }}</label>
+      <label for="{{ form.vision_model.id_for_label }}" data-i18n="labelVisionModel">Vision model</label>
       {{ form.vision_model }}
-      <p class="help">{{ form.vision_model.help_text }}</p>
-      {{ form.vision_model.errors }}
+      <p class="help" data-i18n="helpVisionModel">Select which model will analyze this image.</p>
+      {% if form.vision_model.errors %}<ul class="errorlist">{% for error in form.vision_model.errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+      <label for="{{ form.image.id_for_label }}" data-i18n="labelUploadImage">Upload one image</label>
       {{ form.image }}
-      {{ form.image.errors }}
+      {% if form.image.errors %}<ul class="errorlist">{% for error in form.image.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+      <label for="{{ form.description.id_for_label }}" data-i18n="labelSessionDescription">Session description</label>
       {{ form.description }}
-      <p class="help">{{ form.description.help_text }}</p>
-      {{ form.description.errors }}
+      <p class="help" data-i18n="helpSessionDescription">Optional. What this analysis is for — used to find it later.</p>
+      {% if form.description.errors %}<ul class="errorlist">{% for error in form.description.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
       <label for="{{ form.omit_instructions.id_for_label }}">
-        {{ form.omit_instructions }} {{ form.omit_instructions.label }}
+        {{ form.omit_instructions }} <span data-i18n="labelOmitInstructions">Omit system instructions</span>
       </label>
-      <p class="help">{{ form.omit_instructions.help_text }}</p>
-      {{ form.omit_instructions.errors }}
+      <p class="help" data-i18n="helpOmitInstructions">Send only additional text as the user prompt (for short yes/no questions).</p>
+      {% if form.omit_instructions.errors %}<ul class="errorlist">{% for error in form.omit_instructions.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.prompt_preset.id_for_label }}">{{ form.prompt_preset.label }}</label>
-      {{ form.prompt_preset }}
-      <p class="help">{{ form.prompt_preset.help_text }}</p>
-      {{ form.prompt_preset.errors }}
+      <label for="{{ form.prompt_preset.id_for_label }}" data-i18n="labelPromptPreset">System instructions</label>
+      <select name="{{ form.prompt_preset.html_name }}" id="{{ form.prompt_preset.id_for_label }}">
+        {% for value, label in form.prompt_preset.field.choices %}
+        <option value="{{ value }}" data-i18n="preset_{{ value }}"{% if form.prompt_preset.value|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="help" data-i18n="helpPromptPreset">Sent as system/developer instructions when enabled.</p>
+      {% if form.prompt_preset.errors %}<ul class="errorlist">{% for error in form.prompt_preset.errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.additional.id_for_label }}">{{ form.additional.label }}</label>
+      <label for="{{ form.additional.id_for_label }}" data-i18n="labelAdditional">Additional instructions</label>
       {{ form.additional }}
-      <p class="help">{{ form.additional.help_text }}</p>
-      {{ form.additional.errors }}
+      <p class="help" data-i18n="helpAdditional">Appended to the preset when system instructions are on. Required when they are omitted.</p>
+      {% if form.additional.errors %}<ul class="errorlist">{% for error in form.additional.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
       <div class="actions">
-        <button class="btn" type="submit" id="analyze-btn"{% if not model_ok %} disabled{% endif %}>Analyze</button>
-        <a class="btn secondary" href="{% url 'image_is_versatile:history' %}">Cancel</a>
+        <button class="btn" type="submit" id="analyze-btn"{% if not model_ok %} disabled{% endif %} data-i18n="btnAnalyze">Analyze</button>
+        <a class="btn secondary" href="{% url 'image_is_versatile:history' %}" data-i18n="btnCancel">Cancel</a>
       </div>
     </form>
   </section>
@@ -57,41 +64,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-(function () {
-  const select = document.getElementById("{{ form.vision_model.id_for_label }}");
-  const panel = document.getElementById("model-status-panel");
-  const analyzeBtn = document.getElementById("analyze-btn");
-  if (!select || !panel || !analyzeBtn) return;
-
-  function setStatus(ok, message) {
-    panel.textContent = message;
-    panel.classList.remove("ok", "error");
-    panel.classList.add(ok ? "ok" : "error");
-    analyzeBtn.disabled = !ok;
-  }
-
-  async function checkModel(modelId) {
-    if (!modelId) {
-      setStatus(false, "Select a model to check availability.");
-      return;
-    }
-    panel.textContent = "Checking model availability…";
-    panel.classList.remove("ok", "error");
-    try {
-      const response = await fetch(
-        "{% url 'image_is_versatile:model_status' model_id='__id__' %}".replace("__id__", encodeURIComponent(modelId))
-      );
-      const data = await response.json();
-      setStatus(data.ok, data.message);
-    } catch (err) {
-      setStatus(false, "Could not check model availability.");
-    }
-  }
-
-  select.addEventListener("change", function () {
-    checkModel(select.value);
-  });
-})();
-</script>
+{% load static %}
+<script src="{% static 'image_is_versatile/js/new_analysis.js' %}?v=3"></script>
 {% endblock %}

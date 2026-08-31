@@ -37,4 +37,26 @@ class ComposeEvalTextTests(SimpleTestCase):
             additional="Is there a cat?",
         )
         self.assertEqual(instructions, "")
-        self.assertEqual(user_prompt, "Is there a cat?")
+        self.assertEqual(user_prompt, "Is there a cat?\n\nRespond in English.")
+
+    def test_portuguese_response_directive_on_instructions(self):
+        instructions, user_prompt = compose_eval_text(
+            omit_instructions=False,
+            preset_id="describe",
+            additional="",
+            response_lang="pt",
+        )
+        self.assertIn("Descreva esta imagem com cuidado", instructions)
+        self.assertNotIn("Describe this image carefully", instructions)
+        self.assertIn("Responda em português de Portugal.", instructions)
+        self.assertEqual(user_prompt, "")
+
+    def test_portuguese_response_directive_on_user_prompt_when_omitted(self):
+        instructions, user_prompt = compose_eval_text(
+            omit_instructions=True,
+            preset_id="describe",
+            additional="Há um gato?",
+            response_lang="pt-PT",
+        )
+        self.assertEqual(instructions, "")
+        self.assertIn("Responda em português de Portugal.", user_prompt)

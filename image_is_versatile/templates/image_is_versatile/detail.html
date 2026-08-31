@@ -2,49 +2,52 @@
 {% load json_format %}
 
 {% block title %}Analysis · Image Analysis{% endblock %}
+{% block body_attrs %} data-i18n-title="titleDetail"{% endblock %}
 
 {% block content %}
 <div class="layout">
   <section class="panel">
     <div class="actions" style="margin-top:0;margin-bottom:1rem;">
-      <a class="btn secondary" href="{% url 'image_is_versatile:history' %}">Back to history</a>
-      <a class="btn" href="{% url 'image_is_versatile:new' %}">New analysis</a>
+      <a class="btn secondary" href="{% url 'image_is_versatile:history' %}" data-i18n="btnBackToHistory">Back to history</a>
+      <a class="btn" href="{% url 'image_is_versatile:new' %}" data-i18n="btnNewAnalysis">New analysis</a>
     </div>
 
     <h2>{{ analysis.image_name }}</h2>
-    <p class="muted">Created {{ analysis.created_at|date:"Y-m-d H:i:s" }} ·
-      <span class="badge {{ analysis.status }}">{{ analysis.get_status_display }}</span>
+    <p class="muted">
+      <span data-i18n="createdAt">Created</span>
+      <span data-datetime="{{ analysis.created_at|date:'c' }}">{{ analysis.created_at|date:"Y-m-d H:i:s" }}</span> ·
+      <span class="badge {{ analysis.status }}" data-i18n="status{% if analysis.status == 'in_progress' %}InProgress{% elif analysis.status == 'completed' %}Completed{% else %}Error{% endif %}">{{ analysis.get_status_display }}</span>
     </p>
 
     {% if analysis.description %}
-    <p><strong>Description:</strong> {{ analysis.description }}</p>
+    <p><strong data-i18n="labelDescription">Description:</strong> {{ analysis.description }}</p>
     {% endif %}
 
     <img class="thumb" src="{{ analysis.image.url }}" alt="{{ analysis.image_name }}">
 
     <dl class="meta-grid">
       <div>
-        <dt>Provider</dt>
+        <dt data-i18n="labelProvider">Provider</dt>
         <dd>{{ analysis.provider_label }}</dd>
       </div>
       <div>
-        <dt>Model</dt>
+        <dt data-i18n="labelModel">Model</dt>
         <dd>{{ analysis.display_label }}</dd>
       </div>
       <div>
-        <dt>API model</dt>
+        <dt data-i18n="labelApiModel">API model</dt>
         <dd>{{ analysis.api_model|default:"—" }}</dd>
       </div>
       <div>
-        <dt>Wall latency (s)</dt>
+        <dt data-i18n="labelWallLatency">Wall latency (s)</dt>
         <dd>{% if analysis.latency_wall_seconds is not None %}{{ analysis.latency_wall_seconds }}{% else %}—{% endif %}</dd>
       </div>
       <div>
-        <dt>Provider latency (s)</dt>
+        <dt data-i18n="labelProviderLatency">Provider latency (s)</dt>
         <dd>{% if analysis.latency_provider_seconds is not None %}{{ analysis.latency_provider_seconds }}{% else %}—{% endif %}</dd>
       </div>
       <div>
-        <dt>Tokens (in / out / total)</dt>
+        <dt data-i18n="labelTokens">Tokens (in / out / total)</dt>
         <dd>
           {% if analysis.input_tokens is not None %}
             {{ analysis.input_tokens }} / {{ analysis.output_tokens }} / {{ analysis.total_tokens }}
@@ -52,47 +55,50 @@
         </dd>
       </div>
       <div>
-        <dt>Provider response ID</dt>
+        <dt data-i18n="labelProviderResponseId">Provider response ID</dt>
         <dd>{{ analysis.provider_response_id|default:"—" }}</dd>
       </div>
       <div>
-        <dt>Provider status</dt>
+        <dt data-i18n="labelProviderStatus">Provider status</dt>
         <dd>{{ analysis.provider_status|default:"—" }}</dd>
       </div>
     </dl>
 
     {% if analysis.instructions %}
-    <h3>System instructions</h3>
+    <h3 data-i18n="headingSystemInstructions">System instructions</h3>
     <div class="response-box">{{ analysis.instructions }}</div>
     {% endif %}
 
     {% if analysis.user_prompt %}
-    <h3>User prompt</h3>
+    <h3 data-i18n="headingUserPrompt">User prompt</h3>
     <div class="response-box">{{ analysis.user_prompt }}</div>
     {% endif %}
 
     {% if analysis.status == "error" %}
-    <h3>Error</h3>
+    <h3 data-i18n="headingError">Error</h3>
     <div class="response-box">{{ analysis.error_type }}: {{ analysis.error_message }}</div>
+    {% elif analysis.status == "in_progress" %}
+    <h3 data-i18n="headingResponse">Response</h3>
+    <div class="response-box" data-i18n="analysisInterrupted">This analysis did not finish. Refresh this page, or start a new analysis.</div>
     {% else %}
-    <h3>Response</h3>
+    <h3 data-i18n="headingResponse">Response</h3>
     <div class="response-box">{{ analysis.response_text }}</div>
     {% endif %}
 
     <details>
-      <summary>API request JSON</summary>
+      <summary data-i18n="summaryApiRequest">API request JSON</summary>
       <code>{{ analysis.api_request|json_pretty }}</code>
     </details>
     <details>
-      <summary>API response snapshot</summary>
+      <summary data-i18n="summaryApiResponse">API response snapshot</summary>
       <code>{{ analysis.api_response|json_pretty }}</code>
     </details>
     <details>
-      <summary>Usage raw</summary>
+      <summary data-i18n="summaryUsageRaw">Usage raw</summary>
       <code>{{ analysis.usage_raw|json_pretty }}</code>
     </details>
     <details>
-      <summary>API defaults snapshot</summary>
+      <summary data-i18n="summaryApiDefaults">API defaults snapshot</summary>
       <code>{{ analysis.api_defaults|json_pretty }}</code>
     </details>
   </section>

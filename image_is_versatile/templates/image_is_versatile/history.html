@@ -1,35 +1,38 @@
 {% extends "image_is_versatile/base.html" %}
 
 {% block title %}History · Image Analysis{% endblock %}
+{% block body_attrs %} data-i18n-title="titleHistory"{% endblock %}
 
 {% block content %}
 <div class="layout">
   <section class="panel">
     <div class="actions" style="margin-top:0;margin-bottom:1rem;">
-      <a class="btn" href="{% url 'image_is_versatile:new' %}">New analysis</a>
+      <a class="btn" href="{% url 'image_is_versatile:new' %}" data-i18n="btnNewAnalysis">New analysis</a>
     </div>
     {% if analyses %}
     <table>
       <thead>
         <tr>
-          <th>When</th>
-          <th>Image</th>
-          <th>Status</th>
-          <th>Model</th>
-          <th>Wall (s)</th>
-          <th>Description</th>
+          <th data-i18n="colWhen">When</th>
+          <th data-i18n="colImage">Image</th>
+          <th data-i18n="colStatus">Status</th>
+          <th data-i18n="colModel">Model</th>
+          <th data-i18n="colWall">Wall (s)</th>
+          <th data-i18n="colDescription">Description</th>
         </tr>
       </thead>
       <tbody>
         {% for analysis in analyses %}
         <tr>
           <td>
-            <a class="table-link" href="{% url 'image_is_versatile:detail' analysis_id=analysis.id %}">
+            <a class="table-link" href="{% url 'image_is_versatile:detail' analysis_id=analysis.id %}" data-datetime="{{ analysis.created_at|date:'c' }}">
               {{ analysis.created_at|date:"Y-m-d H:i" }}
             </a>
           </td>
           <td>{{ analysis.image_name }}</td>
-          <td><span class="badge {{ analysis.status }}">{{ analysis.get_status_display }}</span></td>
+          <td>
+            <span class="badge {{ analysis.status }}" data-i18n="status{% if analysis.status == 'in_progress' %}InProgress{% elif analysis.status == 'completed' %}Completed{% else %}Error{% endif %}">{{ analysis.get_status_display }}</span>
+          </td>
           <td>{{ analysis.display_label }}</td>
           <td>{% if analysis.latency_wall_seconds is not None %}{{ analysis.latency_wall_seconds }}{% else %}—{% endif %}</td>
           <td class="muted">{{ analysis.description|default:"—"|truncatechars:60 }}</td>
@@ -38,7 +41,10 @@
       </tbody>
     </table>
     {% else %}
-    <p class="muted">No analyses yet. <a href="{% url 'image_is_versatile:new' %}">Start one</a>.</p>
+    <p class="muted">
+      <span data-i18n="emptyHistory">No analyses yet.</span>
+      <a href="{% url 'image_is_versatile:new' %}" data-i18n="emptyHistoryLink">Start one</a>.
+    </p>
     {% endif %}
   </section>
 </div>

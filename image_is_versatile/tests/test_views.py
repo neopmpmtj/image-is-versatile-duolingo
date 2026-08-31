@@ -89,6 +89,35 @@ class ViewTests(TestCase):
         self.assertContains(response, "New analysis")
         self.assertContains(response, "Vision model")
 
+    @patch("image_is_versatile.views.check_model_availability")
+    def test_new_page_skips_model_listing(self, mock_check):
+        mock_check.return_value = ModelAvailabilityStatus(
+            ok=True,
+            code="checking_model_availability",
+            message="Checking model availability…",
+            provider="deepseek",
+            model_id="deepseek_flash",
+        )
+        response = self.client.get(reverse("image_is_versatile:new"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(mock_check.called)
+        self.assertFalse(mock_check.call_args.kwargs.get("list_models", True))
+
+    def test_detail_in_progress_not_shown_as_empty_response(self):
+        analysis = ImageAnalysis.objects.create(
+            image=SimpleUploadedFile("x.png", b"x", content_type="image/png"),
+            image_name="x.png",
+            vision_model_id="deepseek_flash",
+            provider="deepseek",
+            api_model="deepseek-v4-flash-vision-exp",
+            status=AnalysisStatus.IN_PROGRESS,
+        )
+        response = self.client.get(
+            reverse("image_is_versatile:detail", kwargs={"analysis_id": analysis.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "did not finish")
+
     @override_settings(DEEPSEEK_API_KEY="")
     def test_model_status_missing_key(self):
         response = self.client.get(
@@ -97,6 +126,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertFalse(data["ok"])
+        self.assertEqual(data["code"], "api_key_missing")
         self.assertIn("DEEPSEEK_API_KEY", data["message"])
 
     def test_model_status_unknown(self):
@@ -104,6 +134,8 @@ class ViewTests(TestCase):
             reverse("image_is_versatile:model_status", kwargs={"model_id": "unknown"})
         )
         self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertEqual(data["code"], "unknown_model")
 
     @patch("image_is_versatile.views.analyze_image")
     @patch("image_is_versatile.views.check_model_availability")
@@ -138,6 +170,8 @@ class ViewTests(TestCase):
     def test_new_post_blocked_when_unavailable(self, mock_check):
         mock_check.return_value = ModelAvailabilityStatus(
             ok=False,
+            code="api_key_missing",
+            vars={"env_key": "DEEPSEEK_API_KEY"},
             message="DEEPSEEK_API_KEY is not set.",
             provider="deepseek",
             model_id="deepseek_flash",
@@ -182,6 +216,7 @@ class ViewTests(TestCase):
     def test_settings_post_saves(self):
         from image_is_versatile.services import vision_runtime
 
+        original_path = vision_runtime.RUNTIME_PATH
         tmp_path = vision_runtime.RUNTIME_PATH.parent / ".test_settings_runtime.json"
         vision_runtime.RUNTIME_PATH = tmp_path
         try:
@@ -202,3 +237,23 @@ class ViewTests(TestCase):
         finally:
             if tmp_path.is_file():
                 tmp_path.unlink()
+            vision_runtime.RUNTIME_PATH = original_path
+
+    def test_settings_reset_without_other_fields(self):
+        from image_is_versatile.services import vision_runtime
+
+        original_path = vision_runtime.RUNTIME_PATH
+        tmp_path = vision_runtime.RUNTIME_PATH.parent / ".test_settings_reset.json"
+        vision_runtime.RUNTIME_PATH = tmp_path
+        try:
+            tmp_path.write_text('{"reasoning_effort": "low", "max_output_tokens": 9, "image_detail": "low"}\n')
+            response = self.client.post(
+                reverse("image_is_versatile:settings"),
+                {"action": "reset"},
+            )
+            self.assertEqual(response.status_code, 302)
+            self.assertFalse(tmp_path.is_file())
+        finally:
+            if tmp_path.is_file():
+                tmp_path.unlink()
+            vision_runtime.RUNTIME_PATH = original_path

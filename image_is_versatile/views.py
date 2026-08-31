@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views import View
 
 from image_is_versatile.forms import NewAnalysisForm, VisionSettingsForm
+from image_is_versatile.i18n import en, flash_payload
 from image_is_versatile.image_utils import extract_image_metadata
 from image_is_versatile.models import AnalysisStatus, ImageAnalysis
 from image_is_versatile.services import (
@@ -32,6 +33,7 @@ def _api_defaults_snapshot(
     vision_model_id: str,
     omit_instructions: bool,
     prompt_preset: str,
+    ui_lang: str = "en",
 ) -> dict:
     model = get_model(vision_model_id)
     config = VisionApiRequestConfig.from_active()
@@ -40,6 +42,7 @@ def _api_defaults_snapshot(
         "provider": model.provider,
         "omit_instructions": omit_instructions,
         "prompt_preset": prompt_preset,
+        "ui_lang": ui_lang,
         **config.to_dict(),
     }
 
@@ -59,19 +62,19 @@ class ModelStatusView(View):
                 force_recheck=request.GET.get("recheck") == "1",
             )
         except KeyError:
+            vars_dict = {"model_id": model_id}
             return JsonResponse(
-                {"ok": False, "message": f"Unknown model: {model_id}", "model_id": model_id},
+                {
+                    "ok": False,
+                    "code": "unknown_model",
+                    "message": en("unknown_model", **vars_dict),
+                    "model_id": model_id,
+                    **vars_dict,
+                },
                 status=400,
             )
         request.session.modified = True
-        return JsonResponse(
-            {
-                "ok": status.ok,
-                "message": status.message,
-                "provider": status.provider,
-                "model_id": status.model_id,
-            }
-        )
+        return JsonResponse(status.to_api_dict())
 
 
 class NewAnalysisView(View):
@@ -81,6 +84,7 @@ class NewAnalysisView(View):
         model_status = check_model_availability(
             default_model_id,
             session=request.session,
+            list_models=False,
         )
         request.session.modified = True
         return render(
@@ -102,20 +106,13 @@ class NewAnalysisView(View):
                 model_status = check_model_availability(
                     vision_model_id,
                     session=request.session,
+                    list_models=False,
                 )
                 request.session.modified = True
             except KeyError:
                 model_status = None
 
         if not form.is_valid():
-            if model_status is None and vision_model_id:
-                try:
-                    model_status = check_model_availability(
-                        vision_model_id,
-                        session=request.session,
-                    )
-                except KeyError:
-                    pass
             return render(
                 request,
                 "image_is_versatile/new.html",
@@ -134,7 +131,13 @@ class NewAnalysisView(View):
         )
         request.session.modified = True
         if not model_status.ok:
-            form.add_error(None, model_status.message)
+            if model_status.code:
+                form.add_error(
+                    None,
+                    flash_payload(model_status.code, **(model_status.vars or {})),
+                )
+            else:
+                form.add_error(None, model_status.message)
             return render(
                 request,
                 "image_is_versatile/new.html",
@@ -149,6 +152,7 @@ class NewAnalysisView(View):
         uploaded = form.cleaned_data["image"]
         omit_instructions = form.cleaned_data["omit_instructions"]
         prompt_preset = form.cleaned_data["prompt_preset"]
+        ui_lang = form.cleaned_data.get("ui_lang") or "en"
         instructions = form.cleaned_data["instructions"]
         user_prompt = form.cleaned_data["user_prompt"]
         description = form.cleaned_data["description"]
@@ -159,6 +163,7 @@ class NewAnalysisView(View):
             vision_model_id=vision_model_id,
             omit_instructions=omit_instructions,
             prompt_preset=prompt_preset,
+            ui_lang=ui_lang,
         )
         api_config = VisionApiRequestConfig.from_dict(api_defaults)
 
@@ -201,18 +206,24 @@ class NewAnalysisView(View):
                 api_config=api_config,
             )
             save_success_analysis(analysis=analysis, result=result)
-            messages.success(request, "Analysis completed.")
+            messages.success(request, flash_payload("analysis_completed"))
         except Exception as exc:
             finished_perf = time.perf_counter()
-            save_error_analysis(
-                analysis=analysis,
-                error=exc,
-                request_started_at=request_started_at,
-                request_finished_at=datetime.now(timezone.utc),
-                latency_wall_seconds=round(finished_perf - started_perf, 3),
-                api_request=api_request,
-            )
-            messages.error(request, f"Analysis failed: {exc}")
+            try:
+                save_error_analysis(
+                    analysis=analysis,
+                    error=exc,
+                    request_started_at=request_started_at,
+                    request_finished_at=datetime.now(timezone.utc),
+                    latency_wall_seconds=round(finished_perf - started_perf, 3),
+                    api_request=api_request,
+                )
+            except Exception:
+                analysis.status = AnalysisStatus.ERROR
+                analysis.error_type = type(exc).__name__
+                analysis.error_message = str(exc)
+                analysis.save(update_fields=["status", "error_type", "error_message", "updated_at"])
+            messages.error(request, flash_payload("analysis_failed", detail=str(exc)))
 
         return redirect(reverse("image_is_versatile:detail", kwargs={"analysis_id": analysis.id}))
 
@@ -234,7 +245,7 @@ class VisionSettingsView(View):
     def post(self, request):
         if request.POST.get("action") == "reset":
             reset_vision_params()
-            messages.success(request, "Vision parameters reset to factory defaults.")
+            messages.success(request, flash_payload("settings_reset"))
             return redirect(reverse("image_is_versatile:settings"))
 
         form = VisionSettingsForm(request.POST)
@@ -256,7 +267,7 @@ class VisionSettingsView(View):
             max_output_tokens=form.cleaned_data["max_output_tokens"],
             image_detail=form.cleaned_data["image_detail"],
         )
-        messages.success(request, "Settings saved.")
+        messages.success(request, flash_payload("settings_saved"))
         return redirect(reverse("image_is_versatile:settings"))
 
 

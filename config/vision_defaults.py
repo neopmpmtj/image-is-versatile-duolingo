@@ -1,37 +1,59 @@
 """Vision model defaults, provider registry, and eval prompt presets (not loaded from .env)."""
 
-DEFAULT_EVAL_PROMPT = (
-    "Describe this image carefully. Identify the main objects, their relationships, "
-    "any visible text, and anything uncertain."
-)
-
 EVAL_PROMPT_DEFAULT_ID = "describe"
 
 EVAL_PROMPT_PRESETS = {
     "describe": {
         "label": "Describe (default)",
-        "text": DEFAULT_EVAL_PROMPT,
+        "text": {
+            "en": (
+                "Describe this image carefully. Identify the main objects, their relationships, "
+                "any visible text, and anything uncertain."
+            ),
+            "pt": (
+                "Descreva esta imagem com cuidado. Identifique os objetos principais, as suas "
+                "relações, qualquer texto visível e tudo o que for incerto."
+            ),
+        },
     },
     "ocr": {
         "label": "OCR / text extraction",
-        "text": (
-            "Transcribe all visible text in this image. Preserve layout where helpful. "
-            "Note language, handwriting or print, and anything unreadable or uncertain."
-        ),
+        "text": {
+            "en": (
+                "Transcribe all visible text in this image. Preserve layout where helpful. "
+                "Note language, handwriting or print, and anything unreadable or uncertain."
+            ),
+            "pt": (
+                "Transcreva todo o texto visível nesta imagem. Preserve o layout quando for útil. "
+                "Indique o idioma, se é manuscrito ou impresso, e tudo o que for ilegível ou incerto."
+            ),
+        },
     },
     "inventory": {
         "label": "Object inventory",
-        "text": (
-            "List the main objects in this image. Include counts where possible and "
-            "describe spatial relationships between them."
-        ),
+        "text": {
+            "en": (
+                "List the main objects in this image. Include counts where possible and "
+                "describe spatial relationships between them."
+            ),
+            "pt": (
+                "Liste os objetos principais nesta imagem. Inclua contagens quando possível e "
+                "descreva as relações espaciais entre eles."
+            ),
+        },
     },
     "uncertainty": {
         "label": "Uncertainty focus",
-        "text": (
-            "Describe this image, emphasizing what is occluded, ambiguous, low resolution, "
-            "or otherwise uncertain. Do not guess beyond what the image supports."
-        ),
+        "text": {
+            "en": (
+                "Describe this image, emphasizing what is occluded, ambiguous, low resolution, "
+                "or otherwise uncertain. Do not guess beyond what the image supports."
+            ),
+            "pt": (
+                "Descreva esta imagem, enfatizando o que está oculto, ambíguo, de baixa resolução "
+                "ou de outra forma incerto. Não especule além do que a imagem suporta."
+            ),
+        },
     },
 }
 

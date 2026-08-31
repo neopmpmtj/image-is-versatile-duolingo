@@ -12,9 +12,13 @@ from openai import OpenAI
 
 from image_is_versatile.services.analysis import AnalysisResult
 from image_is_versatile.services.model_registry import VisionModel
+from image_is_versatile.i18n import en
 from image_is_versatile.services.providers.base import (
+    PROVIDER_ANALYZE_TIMEOUT_SECONDS,
+    PROVIDER_LIST_TIMEOUT_SECONDS,
     ModelAvailabilityStatus,
     ProviderModelsList,
+    api_model_is_listed,
     map_provider_error,
 )
 from image_is_versatile.services.vision_config import VisionApiRequestConfig, build_api_request_dict
@@ -28,33 +32,46 @@ class OpenAIResponsesAdapter:
         self.env_key = config["env_key"]
         self.base_url = config.get("base_url")
 
-    def _client(self, api_key: str) -> OpenAI:
-        kwargs: dict[str, Any] = {"api_key": api_key}
+    def _client(self, api_key: str, *, timeout: float, max_retries: int = 0) -> OpenAI:
+        kwargs: dict[str, Any] = {
+            "api_key": api_key,
+            "timeout": timeout,
+            "max_retries": max_retries,
+        }
         if self.base_url:
             kwargs["base_url"] = self.base_url
         return OpenAI(**kwargs)
 
     def list_available_models(self, api_key: str) -> ProviderModelsList:
         if not api_key.strip():
+            vars_dict = {"env_key": self.env_key}
             return ProviderModelsList(
                 ok=False,
-                message=f"{self.env_key} is not set.",
+                code="api_key_missing",
+                vars=vars_dict,
+                message=en("api_key_missing", **vars_dict),
             )
         try:
-            client = self._client(api_key)
+            client = self._client(api_key, timeout=PROVIDER_LIST_TIMEOUT_SECONDS)
             model_ids = [model.id for model in client.models.list()]
             return ProviderModelsList(ok=True, message="Models listed.", model_ids=model_ids)
         except Exception as exc:
+            code, vars_dict, message = map_provider_error(self.label, self.env_key, exc)
             return ProviderModelsList(
                 ok=False,
-                message=map_provider_error(self.label, self.env_key, exc),
+                code=code,
+                vars=vars_dict,
+                message=message,
             )
 
     def check_availability(self, model: VisionModel, api_key: str) -> ModelAvailabilityStatus:
         if not api_key.strip():
+            vars_dict = {"env_key": self.env_key}
             return ModelAvailabilityStatus(
                 ok=False,
-                message=f"{self.env_key} is not set.",
+                code="api_key_missing",
+                vars=vars_dict,
+                message=en("api_key_missing", **vars_dict),
                 provider=self.provider_id,
                 model_id=model.id,
             )
@@ -62,24 +79,29 @@ class OpenAIResponsesAdapter:
         if not listed.ok:
             return ModelAvailabilityStatus(
                 ok=False,
+                code=listed.code,
+                vars=dict(listed.vars),
                 message=listed.message,
                 provider=self.provider_id,
                 model_id=model.id,
             )
-        if model.api_model not in listed.model_ids:
+        if not api_model_is_listed(model.api_model, listed.model_ids):
+            vars_dict = {"api_model": model.api_model, "provider": self.label}
             return ModelAvailabilityStatus(
                 ok=False,
-                message=(
-                    f"API key is valid, but model {model.api_model} is not available on your "
-                    f"{self.label} account."
-                ),
+                code="model_not_on_account",
+                vars=vars_dict,
+                message=en("model_not_on_account", **vars_dict),
                 provider=self.provider_id,
                 model_id=model.id,
                 missing_models=[model.api_model],
             )
+        vars_dict = {"model": model.label, "provider": self.label}
         return ModelAvailabilityStatus(
             ok=True,
-            message=f"{model.label} is available on {self.label}.",
+            code="model_available",
+            vars=vars_dict,
+            message=en("model_available", **vars_dict),
             provider=self.provider_id,
             model_id=model.id,
         )
@@ -129,7 +151,7 @@ class OpenAIResponsesAdapter:
         if instructions_text:
             create_kwargs["instructions"] = instructions_text
 
-        client = self._client(api_key)
+        client = self._client(api_key, timeout=PROVIDER_ANALYZE_TIMEOUT_SECONDS)
         request_started_at = datetime.now(timezone.utc)
         started_perf = time.perf_counter()
         response = client.responses.create(**create_kwargs)

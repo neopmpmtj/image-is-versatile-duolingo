@@ -11,26 +11,19 @@ from image_is_versatile.services.vision_runtime import (
     IMAGE_DETAIL_CHOICES,
     REASONING_EFFORT_CHOICES,
     get_active_vision_params,
-    get_defaults,
 )
 
 
 class VisionSettingsForm(forms.Form):
     reasoning_effort = forms.ChoiceField(
-        label="Reasoning effort",
         choices=[(v, v) for v in REASONING_EFFORT_CHOICES],
-        help_text="Used by OpenAI and DeepSeek (Responses API). Ignored by Gemini.",
     )
     max_output_tokens = forms.IntegerField(
-        label="Max output tokens",
         min_value=1,
         max_value=32000,
-        help_text="Maximum tokens in the model response.",
     )
     image_detail = forms.ChoiceField(
-        label="Image detail",
         choices=[(v, v) for v in IMAGE_DETAIL_CHOICES],
-        help_text="Image resolution hint for OpenAI and DeepSeek vision requests.",
     )
 
     def __init__(self, *args, **kwargs):
@@ -43,40 +36,27 @@ class VisionSettingsForm(forms.Form):
 
 
 class NewAnalysisForm(forms.Form):
-    vision_model = forms.ChoiceField(
-        label="Vision model",
-        choices=[],
-        help_text="Select which model will analyze this image.",
-    )
+    vision_model = forms.ChoiceField(choices=[])
     image = forms.ImageField(
-        label="Upload one image",
         widget=forms.ClearableFileInput(
             attrs={"accept": "image/png,image/jpeg,image/webp,image/gif"}
         ),
     )
     description = forms.CharField(
-        label="Session description",
         required=False,
         widget=forms.Textarea(attrs={"rows": 2}),
-        help_text="Optional. What this analysis is for — used to find it later.",
     )
-    omit_instructions = forms.BooleanField(
-        label="Omit system instructions",
-        required=False,
-        initial=False,
-        help_text="Send only additional text as the user prompt (for short yes/no questions).",
-    )
-    prompt_preset = forms.ChoiceField(
-        label="System instructions",
-        choices=[],
-        initial=default_preset_id,
-        help_text="Sent as system/developer instructions when enabled.",
-    )
+    omit_instructions = forms.BooleanField(required=False, initial=False)
+    prompt_preset = forms.ChoiceField(choices=[], initial=default_preset_id)
     additional = forms.CharField(
-        label="Additional instructions",
         required=False,
         widget=forms.Textarea(attrs={"rows": 3}),
-        help_text="Appended to the preset when system instructions are on. Required when they are omitted.",
+    )
+    ui_lang = forms.ChoiceField(
+        choices=[("en", "en"), ("pt", "pt")],
+        required=False,
+        initial="en",
+        widget=forms.HiddenInput,
     )
 
     def __init__(self, *args, **kwargs):
@@ -92,7 +72,7 @@ class NewAnalysisForm(forms.Form):
         try:
             get_model(vision_model_id)
         except KeyError as exc:
-            raise forms.ValidationError("Unknown vision model selected.") from exc
+            raise forms.ValidationError("unknown_vision_model") from exc
         return vision_model_id
 
     def clean(self):
@@ -104,9 +84,10 @@ class NewAnalysisForm(forms.Form):
                 omit_instructions=cleaned.get("omit_instructions", False),
                 preset_id=cleaned.get("prompt_preset", default_preset_id()),
                 additional=cleaned.get("additional", ""),
+                response_lang=cleaned.get("ui_lang") or "en",
             )
         except ComposeEvalTextError as exc:
-            raise forms.ValidationError(str(exc)) from exc
+            raise forms.ValidationError(exc.code) from exc
         cleaned["instructions"] = instructions
         cleaned["user_prompt"] = user_prompt
         return cleaned

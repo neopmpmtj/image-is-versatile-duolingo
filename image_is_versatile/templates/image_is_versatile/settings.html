@@ -1,32 +1,35 @@
 {% extends "image_is_versatile/base.html" %}
+{% load i18n_flash %}
 
 {% block title %}Settings · Image Analysis{% endblock %}
+{% block body_attrs %} data-i18n-title="titleSettings"{% endblock %}
 
 {% block content %}
 <div class="layout narrow">
   <section class="panel">
-    <h2>Vision API parameters</h2>
+    <h2 data-i18n="pageSettings">Vision API parameters</h2>
     <p class="help">
-      These values apply to every analysis (all models). Saved to
-      <code>config/vision_runtime.json</code>.
+      <span data-i18n="settingsIntro">These values apply to every analysis (all models). Saved to</span>
+      <code class="inline">config/vision_runtime.json</code>.
       {% if using_runtime_file %}
-      Active overrides are in use.
+      <span data-i18n="settingsActiveOverrides">Active overrides are in use.</span>
       {% else %}
-      Using factory defaults from <code>config/vision_defaults.py</code>.
+      <span data-i18n="settingsFactoryDefaults">Using factory defaults from</span>
+      <code class="inline">config/vision_defaults.py</code>.
       {% endif %}
     </p>
 
     <dl class="meta-grid" style="margin-bottom:1rem;">
       <div>
-        <dt>Factory default reasoning</dt>
+        <dt data-i18n="factoryDefaultReasoning">Factory default reasoning</dt>
         <dd>{{ factory_defaults.reasoning_effort }}</dd>
       </div>
       <div>
-        <dt>Factory default max tokens</dt>
+        <dt data-i18n="factoryDefaultMaxTokens">Factory default max tokens</dt>
         <dd>{{ factory_defaults.max_output_tokens }}</dd>
       </div>
       <div>
-        <dt>Factory default image detail</dt>
+        <dt data-i18n="factoryDefaultImageDetail">Factory default image detail</dt>
         <dd>{{ factory_defaults.image_detail }}</dd>
       </div>
     </dl>
@@ -34,28 +37,28 @@
     <form method="post">
       {% csrf_token %}
       {% if form.non_field_errors %}
-      <ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      <ul class="errorlist">{% for error in form.non_field_errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>
       {% endif %}
 
-      <label for="{{ form.reasoning_effort.id_for_label }}">{{ form.reasoning_effort.label }}</label>
+      <label for="{{ form.reasoning_effort.id_for_label }}" data-i18n="labelReasoningEffort">Reasoning effort</label>
       {{ form.reasoning_effort }}
-      <p class="help">{{ form.reasoning_effort.help_text }}</p>
-      {{ form.reasoning_effort.errors }}
+      <p class="help" data-i18n="helpReasoningEffort">Used by OpenAI and DeepSeek (Responses API). Ignored by Gemini.</p>
+      {% if form.reasoning_effort.errors %}<ul class="errorlist">{% for error in form.reasoning_effort.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.max_output_tokens.id_for_label }}">{{ form.max_output_tokens.label }}</label>
+      <label for="{{ form.max_output_tokens.id_for_label }}" data-i18n="labelMaxOutputTokens">Max output tokens</label>
       {{ form.max_output_tokens }}
-      <p class="help">{{ form.max_output_tokens.help_text }}</p>
-      {{ form.max_output_tokens.errors }}
+      <p class="help" data-i18n="helpMaxOutputTokens">Maximum tokens in the model response.</p>
+      {% if form.max_output_tokens.errors %}<ul class="errorlist">{% for error in form.max_output_tokens.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
-      <label for="{{ form.image_detail.id_for_label }}">{{ form.image_detail.label }}</label>
+      <label for="{{ form.image_detail.id_for_label }}" data-i18n="labelImageDetail">Image detail</label>
       {{ form.image_detail }}
-      <p class="help">{{ form.image_detail.help_text }}</p>
-      {{ form.image_detail.errors }}
+      <p class="help" data-i18n="helpImageDetail">Image resolution hint for OpenAI and DeepSeek vision requests.</p>
+      {% if form.image_detail.errors %}<ul class="errorlist">{% for error in form.image_detail.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
 
       <div class="actions">
-        <button class="btn" type="submit">Save settings</button>
-        <button class="btn secondary" type="submit" name="action" value="reset">Reset to defaults</button>
-        <a class="btn secondary" href="{% url 'image_is_versatile:new' %}">Back to new analysis</a>
+        <button class="btn" type="submit" data-i18n="btnSaveSettings">Save settings</button>
+        <button class="btn secondary" type="submit" name="action" value="reset" formnovalidate data-i18n="btnResetDefaults">Reset to defaults</button>
+        <a class="btn secondary" href="{% url 'image_is_versatile:new' %}" data-i18n="btnBackToNew">Back to new analysis</a>
       </div>
     </form>
   </section>
