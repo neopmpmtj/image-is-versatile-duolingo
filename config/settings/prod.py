@@ -17,6 +17,7 @@ FORCE_SCRIPT_NAME = "/image-is/"
 
 STATIC_URL = "/image-is/static/"
 MEDIA_URL = "/image-is/media/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Uploads are real photos for vision analysis; Django's 2.5MB default would
 # reject them. Raise the cap (nginx client_max_body_size must match).
