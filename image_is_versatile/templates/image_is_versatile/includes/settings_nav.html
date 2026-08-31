@@ -1,0 +1,4 @@
+<nav class="settings-subnav" data-i18n-aria="settingsNavAria" aria-label="Settings sections">
+  <a href="{% url 'image_is_versatile:settings' %}" data-i18n="settingsNavVision"{% if request.resolver_match.url_name == 'settings' %} class="active"{% endif %}>Vision parameters</a>
+  <a href="{% url 'image_is_versatile:api_keys' %}" data-i18n="settingsNavApiKeys"{% if request.resolver_match.url_name == 'api_keys' %} class="active"{% endif %}>API keys</a>
+</nav>

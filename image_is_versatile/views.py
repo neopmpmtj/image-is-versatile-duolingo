@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
 
-from image_is_versatile.forms import NewAnalysisForm, VisionSettingsForm
+from image_is_versatile.forms import ApiKeysForm, NewAnalysisForm, VisionSettingsForm
 from image_is_versatile.i18n import en, flash_payload
 from image_is_versatile.image_utils import extract_image_metadata
 from image_is_versatile.models import AnalysisStatus, ImageAnalysis
@@ -21,6 +21,12 @@ from image_is_versatile.services import (
     save_success_analysis_fallback,
 )
 from image_is_versatile.services.vision_config import VisionApiRequestConfig
+from image_is_versatile.services.api_keys import (
+    is_using_saved_keys,
+    list_provider_key_rows,
+    reset_api_keys,
+    save_api_key_updates,
+)
 from image_is_versatile.services.vision_runtime import (
     get_defaults,
     is_using_runtime_file,
@@ -282,6 +288,74 @@ class VisionSettingsView(View):
         )
         messages.success(request, flash_payload("settings_saved"))
         return redirect(reverse("image_is_versatile:settings"))
+
+
+def _api_keys_context(form: ApiKeysForm) -> dict:
+    rows = []
+    for row in list_provider_key_rows():
+        provider_id = row["provider_id"]
+        rows.append(
+            {
+                **row,
+                "key_field": form[f"key_{provider_id}"],
+                "clear_field": form[f"clear_{provider_id}"],
+            }
+        )
+    return {
+        "form": form,
+        "key_rows": rows,
+        "using_saved_keys": is_using_saved_keys(),
+    }
+
+
+class ApiKeysSettingsView(View):
+    def get(self, request):
+        rows = list_provider_key_rows()
+        form = ApiKeysForm([row["provider_id"] for row in rows])
+        return render(
+            request,
+            "image_is_versatile/api_keys.html",
+            _api_keys_context(form),
+        )
+
+    def post(self, request):
+        rows = list_provider_key_rows()
+        provider_ids = [row["provider_id"] for row in rows]
+        if request.POST.get("action") == "reset":
+            reset_api_keys()
+            messages.success(request, flash_payload("api_keys_reset"))
+            return redirect(reverse("image_is_versatile:api_keys"))
+
+        form = ApiKeysForm(provider_ids, request.POST)
+        if not form.is_valid():
+            return render(
+                request,
+                "image_is_versatile/api_keys.html",
+                _api_keys_context(form),
+                status=400,
+            )
+
+        updates: dict[str, str] = {}
+        clears: list[str] = []
+        for provider_id in provider_ids:
+            if form.cleaned_data.get(f"clear_{provider_id}"):
+                clears.append(provider_id)
+                continue
+            value = form.cleaned_data.get(f"key_{provider_id}") or ""
+            if value:
+                updates[provider_id] = value
+        try:
+            save_api_key_updates(updates=updates, clears=clears)
+        except ValueError:
+            form.add_error(None, "api_key_invalid")
+            return render(
+                request,
+                "image_is_versatile/api_keys.html",
+                _api_keys_context(form),
+                status=400,
+            )
+        messages.success(request, flash_payload("api_keys_saved"))
+        return redirect(reverse("image_is_versatile:api_keys"))
 
 
 class DetailView(View):

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -90,6 +91,25 @@ class PersistenceTests(TestCase):
 
 
 class ViewTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        from image_is_versatile.services import api_keys
+
+        self._original_keys_path = api_keys.KEYS_PATH
+        tmpdir = Path(self._original_keys_path.parent) / ".test_api_keys"
+        tmpdir.mkdir(parents=True, exist_ok=True)
+        api_keys.KEYS_PATH = tmpdir / "view_tests_api_keys.json"
+        if api_keys.KEYS_PATH.is_file():
+            api_keys.KEYS_PATH.unlink()
+
+    def tearDown(self):
+        from image_is_versatile.services import api_keys
+
+        if api_keys.KEYS_PATH.is_file():
+            api_keys.KEYS_PATH.unlink()
+        api_keys.KEYS_PATH = self._original_keys_path
+        super().tearDown()
+
     def test_history_page(self):
         response = self.client.get(reverse("image_is_versatile:history"))
         self.assertEqual(response.status_code, 200)
@@ -300,6 +320,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Vision API parameters")
         self.assertContains(response, "Reasoning effort")
+        self.assertContains(response, reverse("image_is_versatile:api_keys"))
 
     def test_settings_post_saves(self):
         from image_is_versatile.services import vision_runtime
@@ -345,6 +366,66 @@ class ViewTests(TestCase):
             if tmp_path.is_file():
                 tmp_path.unlink()
             vision_runtime.RUNTIME_PATH = original_path
+
+    def test_api_keys_page(self):
+        response = self.client.get(reverse("image_is_versatile:api_keys"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "API keys")
+        self.assertContains(response, "OPENAI_API_KEY")
+        self.assertContains(response, "GEMINI_API_KEY")
+        self.assertContains(response, "DEEPSEEK_API_KEY")
+
+    def test_api_keys_post_saves_and_masks(self):
+        from image_is_versatile.services.api_keys import get_override_api_key
+
+        secret = "sk-live-unique-zzQ8"
+        response = self.client.post(
+            reverse("image_is_versatile:api_keys"),
+            {"key_openai": secret},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(get_override_api_key("openai"), secret)
+
+        page = self.client.get(reverse("image_is_versatile:api_keys"))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "zzQ8")
+        self.assertNotContains(page, secret)
+        self.assertContains(page, "Using saved key")
+
+    def test_api_keys_blank_post_keeps_existing(self):
+        from image_is_versatile.services.api_keys import get_override_api_key, save_api_key_updates
+
+        save_api_key_updates(updates={"gemini": "gem-keep-zzQ8"})
+        response = self.client.post(reverse("image_is_versatile:api_keys"), {})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(get_override_api_key("gemini"), "gem-keep-zzQ8")
+
+    def test_api_keys_clear_override(self):
+        from image_is_versatile.services.api_keys import get_override_api_key, save_api_key_updates
+
+        save_api_key_updates(updates={"deepseek": "ds-ui-zzQ8"})
+        response = self.client.post(
+            reverse("image_is_versatile:api_keys"),
+            {"clear_deepseek": "on"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(get_override_api_key("deepseek"), "")
+
+    def test_api_keys_reset_without_other_fields(self):
+        from image_is_versatile.services.api_keys import (
+            get_override_api_key,
+            is_using_saved_keys,
+            save_api_key_updates,
+        )
+
+        save_api_key_updates(updates={"openai": "sk-ui-zzQ8"})
+        response = self.client.post(
+            reverse("image_is_versatile:api_keys"),
+            {"action": "reset"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(get_override_api_key("openai"), "")
+        self.assertFalse(is_using_saved_keys())
 
 
 class NewAnalysisFormTests(TestCase):

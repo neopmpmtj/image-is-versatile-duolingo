@@ -21,6 +21,8 @@ GEMINI_API_KEY=your-gemini-key-here
 DEEPSEEK_API_KEY=your-deepseek-key-here
 ```
 
+You can also add or replace keys in the UI at **/settings/api-keys/**. Values saved there override `.env`, persist across server restarts (`config/api_keys.json`, gitignored), and are never shown in full in the page.
+
 Model catalog, provider routing, API defaults, and prompt presets live in `config/vision_defaults.py` and `config/settings/`.
 
 ## Run
@@ -38,6 +40,7 @@ Open http://127.0.0.1:8000/
 | `/` | History — past analyses |
 | `/new/` | New analysis — model picker + upload + presets. Page load does not call the provider; the browser checks availability via the status API. |
 | `/settings/` | Vision API parameters — reasoning effort, max tokens, image detail. **Reset to defaults** ignores invalid fields. |
+| `/settings/api-keys/` | Provider API keys (OpenAI, Gemini, DeepSeek). Saved keys override `.env` and survive restarts. |
 | `/api/model-status/<model_id>/` | Pre-check selected model availability (JSON). `?recheck=1` bypasses the session cache. |
 | `/analysis/<uuid>/` | Detail — response + metadata |
 
@@ -75,6 +78,8 @@ On `/new/`:
 ## Shared defaults
 
 Factory defaults live in `config/vision_defaults.py`. Change active values at **/settings/** (saved to `config/vision_runtime.json`). Delete that file or use **Reset to defaults** on the settings page to revert.
+
+API keys: `.env` is the fallback. **/settings/api-keys/** writes `config/api_keys.json` (not committed). Leave a field blank to keep the current key; **Clear saved keys** falls back to `.env`.
 
 | Setting | Factory default |
 |---------|-----------------|

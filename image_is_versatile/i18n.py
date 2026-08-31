@@ -12,6 +12,9 @@ MESSAGES_EN: dict[str, str] = {
     "analysis_save_failed": "The model responded, but saving the result failed: {detail}",
     "settings_saved": "Settings saved.",
     "settings_reset": "Vision parameters reset to factory defaults.",
+    "api_keys_saved": "API keys saved.",
+    "api_keys_reset": "Saved API keys cleared. Using .env values.",
+    "api_key_invalid": "One of the API keys is invalid.",
     "unknown_vision_model": "Unknown vision model selected.",
     "additional_required_when_omit": (
         "Enter additional instructions when system instructions are omitted."

@@ -1,0 +1,61 @@
+{% extends "image_is_versatile/base.html" %}
+{% load i18n_flash %}
+
+{% block title %}API keys · Image Analysis{% endblock %}
+{% block body_attrs %} data-i18n-title="titleApiKeys"{% endblock %}
+
+{% block content %}
+<div class="layout narrow">
+  <section class="panel">
+    {% include "image_is_versatile/includes/settings_nav.html" %}
+    <h2 data-i18n="pageApiKeys">API keys</h2>
+    <p class="help">
+      <span data-i18n="apiKeysIntro">Keys saved here override .env and persist across server restarts. Leave a field blank to keep the current value.</span>
+      <span data-i18n="apiKeysSavedTo">Saved to</span>
+      <code class="inline">config/api_keys.json</code>.
+      {% if using_saved_keys %}
+      <span data-i18n="apiKeysActiveOverrides">At least one saved key is in use.</span>
+      {% else %}
+      <span data-i18n="apiKeysUsingEnv">No saved overrides — using .env values when set.</span>
+      {% endif %}
+    </p>
+
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <ul class="errorlist">{% for error in form.non_field_errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>
+      {% endif %}
+
+      {% for row in key_rows %}
+      <div class="key-row">
+        <label for="{{ row.key_field.id_for_label }}">{{ row.label }}</label>
+        <p class="help">
+          <code class="inline">{{ row.env_key }}</code>
+          {% if row.source == "saved" %}
+          <span data-i18n="apiKeyStatusSaved">Using saved key</span>
+          <code class="inline">{{ row.masked }}</code>
+          {% elif row.source == "env" %}
+          <span data-i18n="apiKeyStatusEnv">Using .env</span>
+          <code class="inline">{{ row.masked }}</code>
+          {% else %}
+          <span data-i18n="apiKeyStatusMissing">Not set</span>
+          {% endif %}
+        </p>
+        {{ row.key_field }}
+        {% if row.key_field.errors %}<ul class="errorlist">{% for error in row.key_field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+        <div class="checkbox-row">
+          {{ row.clear_field }}
+          <label for="{{ row.clear_field.id_for_label }}" data-i18n="apiKeyClear">Remove saved key (use .env)</label>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="actions">
+        <button class="btn" type="submit" data-i18n="btnSaveApiKeys">Save API keys</button>
+        <button class="btn secondary" type="submit" name="action" value="reset" formnovalidate data-i18n="btnResetApiKeys">Clear saved keys</button>
+        <a class="btn secondary" href="{% url 'image_is_versatile:settings' %}" data-i18n="btnBackToSettings">Back to settings</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

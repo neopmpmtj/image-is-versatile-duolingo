@@ -7,6 +7,23 @@ from image_is_versatile.services.providers.base import ProviderModelsList
 
 
 class ModelAvailabilityTests(SimpleTestCase):
+    def setUp(self):
+        from image_is_versatile.services import api_keys
+
+        self._original_keys_path = api_keys.KEYS_PATH
+        tmpdir = api_keys.KEYS_PATH.parent / ".test_api_keys"
+        tmpdir.mkdir(parents=True, exist_ok=True)
+        api_keys.KEYS_PATH = tmpdir / "model_availability_api_keys.json"
+        if api_keys.KEYS_PATH.is_file():
+            api_keys.KEYS_PATH.unlink()
+
+    def tearDown(self):
+        from image_is_versatile.services import api_keys
+
+        if api_keys.KEYS_PATH.is_file():
+            api_keys.KEYS_PATH.unlink()
+        api_keys.KEYS_PATH = self._original_keys_path
+
     @override_settings(DEEPSEEK_API_KEY="")
     def test_missing_key(self):
         status = check_model_availability("deepseek_flash")
@@ -122,3 +139,12 @@ class ModelAvailabilityTests(SimpleTestCase):
         )
         self.assertEqual(code, "provider_auth_rejected")
         self.assertEqual(vars_dict["env_key"], "GEMINI_API_KEY")
+
+    @override_settings(DEEPSEEK_API_KEY="")
+    def test_saved_key_used_when_env_empty(self):
+        from image_is_versatile.services.api_keys import save_api_key_updates
+
+        save_api_key_updates(updates={"deepseek": "ds-ui-zzQ8"})
+        status = check_model_availability("deepseek_flash", list_models=False)
+        self.assertTrue(status.ok)
+        self.assertEqual(status.code, "checking_model_availability")

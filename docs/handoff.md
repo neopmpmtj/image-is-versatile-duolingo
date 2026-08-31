@@ -20,9 +20,9 @@ EN + pt-PT UI is client-side (`localStorage` key `iiv-lang`). Pattern: [`docs/i1
 - Settings **Reset to defaults** uses `formnovalidate` so invalid fields cannot block it
 - Greenfield `ImageAnalysis` schema: `vision_model_id`, `provider`, `api_model`, provider-neutral metadata fields
 - Prompt presets + `compose_eval_text()` (Portuguese preset text when `ui_lang=pt`)
-- Views: history `/`, new `/new/`, settings `/settings/`, detail `/analysis/<uuid>/`
+- Views: history `/`, new `/new/`, settings `/settings/`, API keys `/settings/api-keys/`, detail `/analysis/<uuid>/`
 - Runtime vision params via `/settings/` → `config/vision_runtime.json` (overrides `vision_defaults.py`)
-- API keys in `.env`: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`
+- API keys: `.env` fallback (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`); UI overrides at `/settings/api-keys/` → `config/api_keys.json` (gitignored, survives restarts)
 - Unit tests in `image_is_versatile/tests/`
 
 ## Not done

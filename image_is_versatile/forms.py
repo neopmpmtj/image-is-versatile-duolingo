@@ -6,6 +6,7 @@ from image_is_versatile.prompt_presets import (
     default_preset_id,
     preset_choices,
 )
+from image_is_versatile.services.api_keys import MAX_KEY_LENGTH
 from image_is_versatile.services.model_registry import default_model_id, model_choices
 from image_is_versatile.services.vision_runtime import (
     IMAGE_DETAIL_CHOICES,
@@ -33,6 +34,27 @@ class VisionSettingsForm(forms.Form):
             self.fields["reasoning_effort"].initial = active["reasoning_effort"]
             self.fields["max_output_tokens"].initial = active["max_output_tokens"]
             self.fields["image_detail"].initial = active["image_detail"]
+
+
+class ApiKeysForm(forms.Form):
+    def __init__(self, provider_ids: list[str], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for provider_id in provider_ids:
+            self.fields[f"key_{provider_id}"] = forms.CharField(
+                required=False,
+                max_length=MAX_KEY_LENGTH,
+                strip=True,
+                widget=forms.PasswordInput(
+                    render_value=False,
+                    attrs={
+                        "autocomplete": "off",
+                        "spellcheck": "false",
+                        "data-i18n-placeholder": "apiKeyPlaceholder",
+                        "placeholder": "Leave blank to keep current key",
+                    },
+                ),
+            )
+            self.fields[f"clear_{provider_id}"] = forms.BooleanField(required=False)
 
 
 MAX_IMAGE_BYTES = 20 * 1024 * 1024

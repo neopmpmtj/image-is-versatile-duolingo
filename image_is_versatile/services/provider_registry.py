@@ -23,9 +23,12 @@ def get_provider_config(provider_id: str) -> dict[str, Any]:
 
 
 def get_api_key(provider_id: str) -> str:
-    config = get_provider_config(provider_id)
-    env_key = config["env_key"]
-    return getattr(settings, env_key, "") or ""
+    from image_is_versatile.services.api_keys import get_env_api_key, get_override_api_key
+
+    override = get_override_api_key(provider_id)
+    if override:
+        return override
+    return get_env_api_key(provider_id)
 
 
 def get_adapter(provider_id: str):
