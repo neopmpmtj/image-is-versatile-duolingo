@@ -2,6 +2,8 @@
 
 Django app for **multi-provider single-image analysis**. Pick a vision model (OpenAI GPT-5.6, Google Gemini, or DeepSeek), upload an image, run one API call, and persist the full response and metadata in SQLite.
 
+The web UI is **English + Portuguese (Portugal)**. Language is per-browser (`localStorage` key `iiv-lang`); see [`docs/i18n-pattern.md`](docs/i18n-pattern.md).
+
 ## Setup
 
 ```bash
@@ -34,14 +36,16 @@ Open http://127.0.0.1:8000/
 | Path | Purpose |
 |------|---------|
 | `/` | History — past analyses |
-| `/new/` | New analysis — model picker + upload + presets |
-| `/settings/` | Vision API parameters — reasoning effort, max tokens, image detail |
-| `/api/model-status/<model_id>/` | Pre-check selected model availability (JSON) |
+| `/new/` | New analysis — model picker + upload + presets. Page load does not call the provider; the browser checks availability via the status API. |
+| `/settings/` | Vision API parameters — reasoning effort, max tokens, image detail. **Reset to defaults** ignores invalid fields. |
+| `/api/model-status/<model_id>/` | Pre-check selected model availability (JSON). `?recheck=1` bypasses the session cache. |
 | `/analysis/<uuid>/` | Detail — response + metadata |
 
 ## Models
 
-Seven models are configured in `VISION_MODELS` (OpenAI Sol/Terra/Luna, three Gemini, DeepSeek). The dropdown always lists all models; availability is checked when you select one. No automatic failover — pick a different model if credits or rate limits block the current choice.
+Seven models are configured in `VISION_MODELS` (OpenAI Sol/Terra/Luna, three Gemini, DeepSeek). The dropdown always lists all models; availability is checked when you select one (and you can click the status panel to check again). No automatic failover — pick a different model if credits or rate limits block the current choice.
+
+Provider calls time out (12s for model listing, 180s for analysis). While an analysis is running, **Cancel wait**, Escape, or a click outside the dialog dismisses the overlay so the UI is not stuck. If listing returns a dated revision (`gemini-2.0-flash-001`), it still counts as the catalog model.
 
 ## Prompt presets
 
@@ -53,6 +57,7 @@ On `/new/`:
 | System instructions preset | Responses `instructions` (OpenAI/DeepSeek) or combined prompt (Gemini) |
 | Omit system instructions | No `instructions`; additional text required as user prompt |
 | Additional instructions | Appended to preset, or sole user text when omitted |
+| UI language | Hidden `ui_lang` synced from the header; selects preset `text.en` / `text.pt` and appends a respond-in language line |
 | Session description | Not sent — metadata only |
 
 ## Add a model or provider
