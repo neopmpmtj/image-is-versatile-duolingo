@@ -11,7 +11,7 @@ from typing import Any
 from django.conf import settings
 
 REASONING_EFFORT_CHOICES = ("none", "low", "high", "max")
-IMAGE_DETAIL_CHOICES = ("auto", "low", "high", "original")
+IMAGE_DETAIL_CHOICES = ("auto", "low", "high")
 MAX_OUTPUT_TOKENS_MIN = 1
 MAX_OUTPUT_TOKENS_MAX = 32000
 

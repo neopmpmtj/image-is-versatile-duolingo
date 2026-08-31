@@ -27,7 +27,7 @@
 
       <label for="{{ form.image.id_for_label }}" data-i18n="labelUploadImage">Upload one image</label>
       {{ form.image }}
-      {% if form.image.errors %}<ul class="errorlist">{% for error in form.image.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      {% if form.image.errors %}<ul class="errorlist">{% for error in form.image.errors %}<li data-flash-msg="{{ error }}">{{ error|flash_display }}</li>{% endfor %}</ul>{% endif %}
 
       <label for="{{ form.description.id_for_label }}" data-i18n="labelSessionDescription">Session description</label>
       {{ form.description }}
@@ -65,5 +65,5 @@
 
 {% block extra_js %}
 {% load static %}
-<script src="{% static 'image_is_versatile/js/new_analysis.js' %}?v=3"></script>
+<script src="{% static 'image_is_versatile/js/new_analysis.js' %}?v=4"></script>
 {% endblock %}

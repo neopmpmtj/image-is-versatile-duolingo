@@ -28,11 +28,15 @@
         return;
     }
 
+    function formIsLocked() {
+        return Boolean(form && form.getAttribute("data-busy-submitted") === "1");
+    }
+
     function setStatus(ok, message) {
         panel.textContent = message;
         panel.classList.remove("ok", "error");
         panel.classList.add(ok ? "ok" : "error");
-        analyzeBtn.disabled = !ok;
+        analyzeBtn.disabled = formIsLocked() || !ok;
         panel.setAttribute("title", t("clickToRecheckModel"));
     }
 

@@ -11,6 +11,7 @@ class ComposeEvalTextTests(SimpleTestCase):
             additional="",
         )
         self.assertTrue(instructions)
+        self.assertIn("Respond in English.", instructions)
         self.assertEqual(user_prompt, "")
 
     def test_additional_appended_to_preset(self):

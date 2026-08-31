@@ -50,6 +50,14 @@ class VisionRuntimeTests(SimpleTestCase):
                 image_detail="auto",
             )
 
+    def test_save_rejects_unsupported_image_detail(self):
+        with self.assertRaises(ValueError):
+            save_vision_params(
+                reasoning_effort="low",
+                max_output_tokens=100,
+                image_detail="original",
+            )
+
     def test_save_rejects_invalid_tokens(self):
         with self.assertRaises(ValueError):
             save_vision_params(

@@ -38,6 +38,34 @@ def save_success_analysis(*, analysis: ImageAnalysis, result: AnalysisResult) ->
     return analysis
 
 
+def save_success_analysis_fallback(*, analysis: ImageAnalysis, result: AnalysisResult) -> ImageAnalysis:
+    """Persist the model text when the full metadata save fails."""
+    analysis.status = AnalysisStatus.COMPLETED
+    analysis.response_text = result.response_text
+    analysis.provider_response_id = result.provider_response_id
+    analysis.response_model = result.response_model
+    analysis.provider_status = result.provider_status
+    analysis.request_started_at = result.request_started_at
+    analysis.request_finished_at = result.request_finished_at
+    analysis.latency_wall_seconds = result.latency_wall_seconds
+    analysis.completed_at = django_timezone.now()
+    analysis.save(
+        update_fields=[
+            "status",
+            "response_text",
+            "provider_response_id",
+            "response_model",
+            "provider_status",
+            "request_started_at",
+            "request_finished_at",
+            "latency_wall_seconds",
+            "completed_at",
+            "updated_at",
+        ]
+    )
+    return analysis
+
+
 def save_error_analysis(
     *,
     analysis: ImageAnalysis,

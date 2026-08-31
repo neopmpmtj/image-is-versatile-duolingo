@@ -61,6 +61,9 @@ class ModelAvailabilityTests(SimpleTestCase):
         check_model_availability("deepseek_flash", session=session)
         check_model_availability("deepseek_flash", session=session)
         self.assertEqual(mock_list.call_count, 1)
+        cached = session["vision_provider_deepseek"]
+        self.assertTrue(cached["key"].startswith("sha256:"))
+        self.assertNotIn("ds-test", cached["key"])
 
     @patch("image_is_versatile.services.providers.openai_responses.OpenAIResponsesAdapter.list_available_models")
     @override_settings(DEEPSEEK_API_KEY="ds-test")
